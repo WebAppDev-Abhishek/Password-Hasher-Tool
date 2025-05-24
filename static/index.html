@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Hasher - LDAP Compatible</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Force styles to be applied */
+        button.btn {
+            background-color: #1f2937 !important; /* gray-800 */
+            color: white !important;
+            padding: 0.5rem 1rem !important;
+            border-radius: 0.5rem !important;
+            font-weight: 500 !important;
+            transition: all 0.2s ease !important;
+            border: none !important;
+            cursor: pointer !important;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+        }
+
+        button.btn:hover {
+            background-color: #111827 !important; /* gray-900 */
+        }
+
+        button.btn:focus {
+            outline: none !important;
+            box-shadow: 0 0 0 2px #374151, 0 0 0 4px #e5e7eb !important; /* gray-700 ring */
+        }
+
+        .result-text {
+            font-family: 'Consolas', monospace;
+            font-size: 1.1rem;
+            word-break: break-all;
+            padding: 1rem;
+            background-color: #f8fafc;
+            border-radius: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .history-item {
+            transition: all 0.2s ease;
+        }
+
+        .history-item:hover {
+            transform: translateX(4px);
+        }
+
+        .glass-effect {
+            background: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        /* Input focus styles */
+        input:focus, select:focus {
+            border-color: #4b5563 !important; /* gray-600 */
+            box-shadow: 0 0 0 2px #9ca3af !important; /* gray-400 */
+        }
+
+        /* Password input container styles */
+        .password-container {
+            position: relative;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #6b7280;
+            padding: 4px;
+            transition: color 0.2s ease;
+        }
+
+        .password-toggle:hover {
+            color: #374151;
+        }
+
+        .password-toggle:focus {
+            outline: none;
+            color: #1f2937;
+        }
+
+        /* Adjust password input padding to accommodate the eye icon */
+        .password-input {
+            padding-right: 40px !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-4xl font-bold text-center mb-8 text-gray-800">Password Hasher Tool</h1>
+        
+        <div class="max-w-4xl mx-auto glass-effect rounded-xl p-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Left Column: Input Form -->
+                <div class="space-y-6">
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Hash Password</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Password</label>
+                            <div class="password-container">
+                                <input type="password" id="password" 
+                                    class="password-input mt-1 block w-full rounded-lg border border-gray-300 shadow-sm bg-white px-3 py-2">
+                                <button type="button" class="password-toggle" onclick="togglePasswordVisibility()">
+                                    <i class="fas fa-eye" id="passwordToggleIcon"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Salt</label>
+                            <input type="text" id="salt" 
+                                class="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm bg-white px-3 py-2">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Algorithm</label>
+                            <select id="algorithm" 
+                                class="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm bg-white px-3 py-2">
+                                <option value="md5">MD5</option>
+                                <option value="sha1">SHA1</option>
+                                <option value="sha256">SHA256</option>
+                                <option value="sha512">SHA512</option>
+                            </select>
+                        </div>
+                        
+                        <div class="flex space-x-4 pt-2">
+                            <button type="button" onclick="hashPassword()" 
+                                class="btn flex-1">
+                                Hash It
+                            </button>
+                            <button type="button" onclick="compareHash()" 
+                                class="btn flex-1">
+                                Compare
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mt-8">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-2">Hashed Result:</h2>
+                        <div id="result" class="result-text"></div>
+                    </div>
+                    
+                    <div id="comparisonResult" class="mt-8 hidden">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-2">Comparison Result:</h2>
+                        <div id="comparisonText" class="result-text"></div>
+                    </div>
+                </div>
+
+                <!-- Right Column: History -->
+                <div class="space-y-6">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-2xl font-semibold text-gray-800">History</h2>
+                        <div class="space-x-2">
+                            <button type="button" onclick="downloadHistory()" 
+                                class="btn">
+                                Download
+                            </button>
+                            <button type="button" onclick="clearHistory()" 
+                                class="btn">
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                    <div id="historyList" class="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                        <!-- History items will be added here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load history from localStorage
+        let history = JSON.parse(localStorage.getItem('hashHistory') || '[]');
+        
+        function updateHistoryDisplay() {
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = history.map((item, index) => `
+                <div class="history-item bg-white/50 rounded-lg p-4 shadow-sm cursor-pointer" 
+                     onclick="loadHistoryItem(${index})">
+                    <div class="flex justify-between items-start">
+                        <div class="space-y-1">
+                            <div class="text-sm font-medium text-gray-600">${item.algorithm.toUpperCase()}</div>
+                            <div class="text-xs text-gray-500">${new Date(item.timestamp).toLocaleString()}</div>
+                            ${item.note ? `<div class="text-xs text-indigo-600">${item.note}</div>` : ''}
+                        </div>
+                        <button onclick="event.stopPropagation(); removeHistoryItem(${index})" 
+                                class="text-red-600 hover:text-red-800">
+                            ×
+                        </button>
+                    </div>
+                    <div class="mt-2 text-sm font-mono break-all">${item.hashed_password}</div>
+                </div>
+            `).join('');
+        }
+
+        function saveToHistory() {
+            const result = document.getElementById('result').textContent;
+            if (!result) return;
+
+            const algorithm = document.getElementById('algorithm').value;
+            history.unshift({
+                hashed_password: result,
+                algorithm: algorithm,
+                timestamp: new Date().toISOString()
+            });
+
+            // Keep only last 10 items
+            if (history.length > 10) {
+                history = history.slice(0, 10);
+            }
+
+            localStorage.setItem('hashHistory', JSON.stringify(history));
+            updateHistoryDisplay();
+        }
+
+        function clearHistory() {
+            if (confirm('Are you sure you want to clear the history?')) {
+                history = [];
+                localStorage.removeItem('hashHistory');
+                updateHistoryDisplay();
+            }
+        }
+
+        function removeHistoryItem(index) {
+            history.splice(index, 1);
+            localStorage.setItem('hashHistory', JSON.stringify(history));
+            updateHistoryDisplay();
+        }
+
+        function loadHistoryItem(index) {
+            const item = history[index];
+            document.getElementById('algorithm').value = item.algorithm;
+            document.getElementById('result').textContent = item.hashed_password;
+        }
+
+        function downloadHistory() {
+            if (history.length === 0) {
+                alert('No history to download');
+                return;
+            }
+
+            const content = history.map(item => {
+                return `Algorithm: ${item.algorithm.toUpperCase()}
+Timestamp: ${new Date(item.timestamp).toLocaleString()}
+Hash: ${item.hashed_password}
+----------------------------------------`;
+            }).join('\n\n');
+
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `password-hash-history-${new Date().toISOString().split('T')[0]}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        async function hashPassword() {
+            const password = document.getElementById('password').value;
+            const salt = document.getElementById('salt').value;
+            const algorithm = document.getElementById('algorithm').value;
+            
+            try {
+                const response = await fetch('/api/hash', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ password, salt, algorithm }),
+                });
+                
+                const data = await response.json();
+                document.getElementById('result').textContent = data.hashed_password;
+                document.getElementById('comparisonResult').classList.add('hidden');
+            } catch (error) {
+                alert('Error hashing password: ' + error.message);
+            }
+        }
+        
+        async function compareHash() {
+            const password = document.getElementById('password').value;
+            const salt = document.getElementById('salt').value;
+            const algorithm = document.getElementById('algorithm').value;
+            
+            try {
+                const response = await fetch('/api/compare', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ password, salt, algorithm }),
+                });
+                
+                const data = await response.json();
+                const comparisonDiv = document.getElementById('comparisonResult');
+                const comparisonText = document.getElementById('comparisonText');
+                
+                comparisonDiv.classList.remove('hidden');
+                if (data.matches) {
+                    comparisonText.innerHTML = `
+                        <div class="text-green-600 font-medium text-lg mb-2">✓ Hashes match!</div>
+                        <div class="space-y-2">
+                            <div><span class="font-medium">New hash:</span> ${data.new_hash}</div>
+                            <div><span class="font-medium">Previous hash:</span> ${data.last_hash}</div>
+                        </div>
+                    `;
+                    // Automatically save to history when hashes match
+                    if (data.new_hash) {
+                        history.unshift({
+                            hashed_password: data.new_hash,
+                            algorithm: algorithm,
+                            timestamp: new Date().toISOString(),
+                            note: 'Comparison Match'
+                        });
+                        // Keep only last 10 items
+                        if (history.length > 10) {
+                            history = history.slice(0, 10);
+                        }
+                        localStorage.setItem('hashHistory', JSON.stringify(history));
+                        updateHistoryDisplay();
+                    }
+                } else {
+                    comparisonText.innerHTML = `
+                        <div class="text-red-600 font-medium text-lg mb-2">✗ Hashes do not match</div>
+                        <div class="space-y-2">
+                            <div><span class="font-medium">New hash:</span> ${data.new_hash}</div>
+                            <div><span class="font-medium">Previous hash:</span> ${data.last_hash || 'None'}</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                alert('Error comparing hashes: ' + error.message);
+            }
+        }
+
+        // Add password visibility toggle function
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.getElementById('passwordToggleIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+
+        // Initialize history display
+        updateHistoryDisplay();
+    </script>
+</body>
+</html> 
