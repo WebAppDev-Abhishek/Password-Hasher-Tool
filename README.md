@@ -87,6 +87,9 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
+![screencapture-127-0-0-1-8080-2025-05-24-22_53_34](https://github.com/user-attachments/assets/64c749b5-0d5b-4928-b781-8378bf358248)
+
+
 ## Acknowledgments
 
 - Actix-web team for the excellent web framework
